@@ -7,17 +7,16 @@
 #load   "Prelude.fs"
         "Generators.fs"
 #else
-module TomlFs.Tests.ParserTests
+module Toml.FSharp.Tests.ParserTests
 #endif
 
 
 open NUnit.Framework
 open FsCheck
 open FParsec 
-open TomlFSharp.Prelude
-open TomlFSharp.Parsers
-open TomlFs.Tests.Prelude
-open TomlFs.Tests.Generators
+open Toml.FSharp.Parsers
+open Toml.FSharp.Tests.Generators
+open Toml.FSharp.Tests.Prelude
 
 let inline throwConfig maxTest startSize endSize = 
     { Config.QuickThrowOnFailure with MaxTest = maxTest; StartSize = startSize; EndSize = endSize}
@@ -26,11 +25,9 @@ let longCheck   x = Check.One (throwConfig 10000 50 700, x)
 let midCheck    x = Check.One (throwConfig 3000  20 300, x)
 let shortCheck  x = Check.One (throwConfig 500   5  100, x)
 
-
 (*|---------------------|*)
 (*| String Parser Tests |*)
 (*|---------------------|*)
-
 
 let parserTest bound parser  =
     fun (str:string) -> 

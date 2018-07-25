@@ -1,4 +1,4 @@
-﻿module TomlFSharp.Prelude
+﻿module Toml.FSharp.Prelude
 open System
 (*| Helpers |*)
 

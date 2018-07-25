@@ -1,7 +1,5 @@
-﻿[<AutoOpen>]
-module TomlFs.Tests.Generators
+﻿module Toml.FSharp.Tests.Generators
 open System
-open System.Text
 open FsCheck
 
 

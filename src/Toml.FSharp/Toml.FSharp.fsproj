@@ -10,6 +10,7 @@
     <Compile Include="Prelude.fs" />
     <Compile Include="AST.fs" />
     <Compile Include="Parsers.fs" />
+    <Compile Include="Library.fs" />
     <None Include="Script.fsx" />
     <None Include="tomlit.fsx" />
     <None Include="datatypes.fsx" />

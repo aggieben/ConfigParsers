@@ -1,13 +1,13 @@
 ﻿#nowarn "62"
-namespace TomlFSharp
+namespace Toml.FSharp
 
 open System
 open System.Collections.Generic
 open System.Text
 open FParsec
 open FParsec.Primitives
-open TomlFSharp.AST
-open TomlFSharp.Prelude
+open Toml.FSharp.AST
+open Toml.FSharp.Prelude
 
 
 module Parsers =
@@ -517,18 +517,4 @@ module Parsers =
         toml_section .>>. (section_splitter |>> fun ls ->
             Array.ofList ls |> Array.Parallel.map parse_block)
         |>> sprint_parse_array 
-    
-[<AutoOpen>]
-module Read =
-    open Parsers
-    /// Read TOML data out of a file at `path`
-    let readTomlFile (path:string) =
-        match runParserOnFile parse_toml_table () path (Text.Encoding.UTF8) with
-        | Failure (errorMsg,_,_) -> failwith errorMsg
-        | Success (result,_,_)   -> result
 
-    /// Read TOML data out of a string
-    let readTomlString (text:string) =
-        match runParserOnString parse_toml_table () "toml" text with
-        | Failure (errorMsg,_,_) -> failwith errorMsg
-        | Success (result,_,_)   -> result

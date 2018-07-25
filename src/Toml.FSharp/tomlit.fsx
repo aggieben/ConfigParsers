@@ -1,14 +1,13 @@
 ﻿System.IO.Directory.SetCurrentDirectory __SOURCE_DIRECTORY__
-#r @"../../packages/FParsec/lib/net40-client/FParsecCS.dll"
-#r @"../../packages/FParsec/lib/net40-client/FParsec.dll"
-//#r @"bin/release/toml-fs.dll"
+#load @"..\..\.paket\load\netstandard2.0\FParsec.fsx"
 #load "Prelude.fs"
       "AST.fs"
       "Parsers.fs"
+      
 open FParsec
-open TomlFSharp.Prelude
-open TomlFSharp.AST
-open TomlFSharp.Parsers
+open Toml.FSharp.Prelude
+open Toml.FSharp.AST
+open Toml.FSharp.Parsers
 
 
 type DebugType =

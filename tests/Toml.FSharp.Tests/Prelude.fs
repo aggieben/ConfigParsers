@@ -1,10 +1,7 @@
-﻿[<AutoOpen>]
-module TomlFs.Tests.Prelude
+﻿module Toml.FSharp.Tests.Prelude
 
-open System
 open FsCheck
 open FParsec
-open TomlFSharp.Parsers
 
 
 let inline registerArb<'a>() = Arb.register<'a>() |> ignore
