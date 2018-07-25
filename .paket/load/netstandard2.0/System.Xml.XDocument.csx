@@ -1,1 +1,0 @@
-#r "../../../packages/System.Xml.XDocument/lib/netstandard1.3/System.Xml.XDocument.dll" 

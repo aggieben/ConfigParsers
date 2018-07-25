@@ -1,8 +1,0 @@
-#load "Microsoft.DotNet.InternalAbstractions.csx" 
-#load "System.ComponentModel.EventBasedAsync.csx" 
-#load "System.ComponentModel.TypeConverter.csx" 
-#load "System.Diagnostics.Process.csx" 
-#load "System.Runtime.InteropServices.RuntimeInformation.csx" 
-#load "System.Threading.Thread.csx" 
-#load "System.Xml.XmlDocument.csx" 
-#load "System.Xml.XPath.XmlDocument.csx" 
