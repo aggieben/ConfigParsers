@@ -1,4 +1,5 @@
 source https://api.nuget.org/v3/index.json
+source https://dotnet.myget.org/F/dotnet-corefxlab/api/v3/index.json
 
 framework: >= netstandard2.0
 
@@ -11,6 +12,7 @@ nuget NUnit.ConsoleRunner
 nuget NUnit3TestAdapter
 nuget SourceLink.Fake
 nuget Microsoft.NET.Test.Sdk
+nuget System.Time
 
 group Build 
     source https://api.nuget.org/v3/index.json

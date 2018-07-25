@@ -9,6 +9,7 @@
   <ItemGroup>
     <Compile Include="Prelude.fs" />
     <Compile Include="AST.fs" />
+    <Compile Include="DocumentModel.fs" />
     <Compile Include="Parsers.fs" />
     <Compile Include="Library.fs" />
     <None Include="Script.fsx" />
