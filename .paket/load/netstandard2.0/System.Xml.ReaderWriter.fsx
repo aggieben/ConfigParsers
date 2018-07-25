@@ -1,0 +1,1 @@
+#r "../../../packages/System.Xml.ReaderWriter/lib/netstandard1.3/System.Xml.ReaderWriter.dll" 
