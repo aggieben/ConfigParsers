@@ -16,6 +16,7 @@ type PrimitiveValue =
 type ArrayValue = Array of PrimitiveValue
 
 type Value =
+    | InlineTableValue of ReadOnlyDictionary<string,Value>
     | PrimitiveValue of PrimitiveValue
     | ArrayValue of ArrayValue
 
@@ -45,8 +46,8 @@ type Value =
 /// will represent them as flat structures, and leave nesting as a problem for parsing.
 type Table =
     | SimpleTable of ReadOnlyDictionary<string,Value>
-    | TableArray of ReadOnlyDictionary<string,Value> array
+    | ArrayTable of ReadOnlyDictionary<string,Value> array
 
 type Document = {
-    Tables : Table array option; // top-level KVPs can be represented in the "default" or ""-named table
+    Tables : ReadOnlyDictionary<string, Table>
 }
