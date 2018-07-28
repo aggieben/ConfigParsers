@@ -42,24 +42,20 @@ let [<Property(MaxTest = 500)>] ``unified string parser reads all toml string ty
 
 let valueParser psr = parserTest 3 psr
 
-let [<Fact>] ``parses all ints`` () =
+let [<Property>] ``parses all ints`` () =
     Prop.forAll toml_int_arb (valueParser toml_int)
-    |> Check.QuickThrowOnFailure
 
-let [<Fact>] ``parses all floats`` () =
+let [<Property>] ``parses all floats`` () =
     Prop.forAll toml_float_arb (valueParser toml_float)
-    |> Check.QuickThrowOnFailure
 
 let [<Property>] ``parses bools`` () =
     Prop.forAll toml_bool_arb (valueParser toml_bool )
 
-let [<Fact>] ``parses all DateTimes`` () =
+let [<Property>] ``parses all DateTimes`` () =
     Prop.forAll toml_datetime_arb (valueParser toml_datetime)
-    |> Check.QuickThrowOnFailure
 
 let [<Property>] ``parses all Arrays`` () =
     Prop.forAll toml_array_arb (valueParser toml_array)
-    |> Check.QuickThrowOnFailure
 
 
 // Table Parser Tests 
@@ -76,7 +72,8 @@ let [<Property>] ``parses quote table keys`` () =
 let [<Property>] ``parses toml keys`` () =
     Prop.forAll toml_key_arb (valueParser toml_key)
 
-let [<Fact>] ``parses toml items (key value pairs)`` () =
+let [<Property>] ``parses toml items (key value pairs)`` () =
     Prop.forAll toml_item_arb (valueParser toml_item)
-    |> Check.QuickThrowOnFailure
+
+
 
