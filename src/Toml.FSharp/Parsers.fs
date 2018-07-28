@@ -12,7 +12,7 @@ open Toml.FSharp.Prelude
 
 module Parsers =
 
-    type UserState = unit    
+    type UserState = unit
     type 't Parser = ('t,UserState) Parser 
 
     (*|---------------------------------------------|*)
@@ -30,30 +30,30 @@ module Parsers =
     (*|---------------------|*)
 
 
-    let ``.``   : _ Parser = pchar   '.'  .>> skip_tspcs 
-    let ``,``   : _ Parser = pchar   ','  .>> skip_tspcs   
-    let ``[``   : _ Parser = pchar   '['  .>> skip_tspcs              
-    let ``]``   : _ Parser = pchar   ']'  .>> skip_tspcs   
-    let ``{``   : _ Parser = pchar   '{'  .>> skip_tspcs   
-    let ``}``   : _ Parser = pchar   '}'  .>> skip_tspcs    
-    let ``[[``  : _ Parser = pstring "[[" .>> skip_tspcs  
-    let ``]]``  : _ Parser = pstring "]]" .>> skip_tspcs  
-    let ``"``   : _ Parser = pchar   '"'
-    let ``'``   : _ Parser = pchar   '\''
-    let ``"""`` : _ Parser = pstring "\"\"\""
-    let ``'''`` : _ Parser = pstring "\'\'\'"
-    let ``\``   : _ Parser = pchar '\\' 
+    let ``.``   = pchar   '.'  .>> skip_tspcs
+    let ``,``   = pchar   ','  .>> skip_tspcs
+    let ``[``   = pchar   '['  .>> skip_tspcs
+    let ``]``   = pchar   ']'  .>> skip_tspcs
+    let ``{``   = pchar   '{'  .>> skip_tspcs
+    let ``}``   = pchar   '}'  .>> skip_tspcs
+    let ``[[``  = pstring "[[" .>> skip_tspcs
+    let ``]]``  = pstring "]]" .>> skip_tspcs
+    let ``"``   = pchar   '"'
+    let ``'``   = pchar   '\''
+    let ``"""`` = pstring "\"\"\""
+    let ``'''`` = pstring "\'\'\'"
+    let ``\``   = pchar '\\' 
 
     let inline isEscChar c = c = '\\'  
     let inline isAnyChar _ = true  
     // parsers for string bounds that won't be fooled by escaped quotes
     let prevCharNot = previousCharSatisfiesNot
     let prevCharIs  = previousCharSatisfies 
-    let ``|"|``   : _ Parser = prevCharNot isEscChar >>. pchar '"'
-    let ``|'|``   : _ Parser = prevCharNot isEscChar >>. pchar '\''
-    let ``|"""|`` : _ Parser = prevCharNot isEscChar >>. pstring "\"\"\""
-    let ``|'''|`` : _ Parser = prevCharNot isEscChar >>. pstring "'''"
-    let skipEqs   : _ Parser = skipChar '=' >>. skip_tspcs
+    let ``|"|``   = prevCharNot isEscChar >>. pchar '"'
+    let ``|'|``   = prevCharNot isEscChar >>. pchar '\''
+    let ``|"""|`` = prevCharNot isEscChar >>. pstring "\"\"\""
+    let ``|'''|`` = prevCharNot isEscChar >>. pstring "'''"
+    let skipEqs   = skipChar '=' >>. skip_tspcs
 
     
     (*|----------------|*)

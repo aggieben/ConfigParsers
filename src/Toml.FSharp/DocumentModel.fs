@@ -22,7 +22,7 @@ type Value =
 
 /// This type is intentionally flat, rather than recursive.  While it can be reasonably said that TOML supports
 /// nested tables, it can equally be said that nested tables can be represented in a flat structure with
-/// "dot notation" naming.  For example:
+/// dotted keys.  For example:
 /// 
 /// ```
 /// [a]
