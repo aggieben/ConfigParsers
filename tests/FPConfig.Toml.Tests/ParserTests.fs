@@ -7,16 +7,16 @@
 #load   "Prelude.fs"
         "Generators.fs"
 #else
-module Toml.FSharp.Tests.ParserTests
+module FPConfig.Toml.Tests.ParserTests
 #endif
 
 
 open NUnit.Framework
 open FsCheck
 open FParsec 
-open Toml.FSharp.Parsers
-open Toml.FSharp.Tests.Generators
-open Toml.FSharp.Tests.Prelude
+open FPConfig.Toml.Parsers
+open FPConfig.Toml.Tests.Generators
+open FPConfig.Toml.Tests.Prelude
 
 let inline throwConfig maxTest startSize endSize = 
     { Config.QuickThrowOnFailure with MaxTest = maxTest; StartSize = startSize; EndSize = endSize}

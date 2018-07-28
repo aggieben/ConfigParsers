@@ -1,9 +1,9 @@
-namespace Toml.FSharp
+namespace FPConfig.Toml
 module Toml =
 
     open System
     open FParsec
-    open Toml.FSharp.Parsers
+    open FPConfig.Toml.Parsers
 
     /// Read TOML data out of a file at `path`
     let readTomlFile (path:string) =

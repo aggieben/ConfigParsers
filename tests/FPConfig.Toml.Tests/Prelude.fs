@@ -1,4 +1,4 @@
-﻿module Toml.FSharp.Tests.Prelude
+﻿module FPConfig.Toml.Tests.Prelude
 
 open FsCheck
 open FParsec

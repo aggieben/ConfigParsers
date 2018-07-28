@@ -1,4 +1,4 @@
-﻿module Toml.FSharp.Tests.Generators
+﻿module FPConfig.Toml.Tests.Generators
 open System
 open FsCheck
 

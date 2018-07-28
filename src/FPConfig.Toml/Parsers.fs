@@ -1,13 +1,11 @@
 ﻿#nowarn "62"
-namespace Toml.FSharp
+namespace FPConfig.Toml
 
 open System
-open System.Collections.Generic
 open System.Text
 open FParsec
-open FParsec.Primitives
-open Toml.FSharp.AST
-open Toml.FSharp.Prelude
+open AST
+open Prelude
 
 
 module Parsers =
@@ -20,9 +18,8 @@ module Parsers =
     (*|---------------------------------------------|*)
 
     /// toml approved whitespace is ' ' or '\t'
-    let skip_tspcs      : _ Parser  = skipManySatisfy (isAnyOf [' ';'\t'])
-    let tskipRestOfLine : _ Parser  = choice [ skipChar '#' >>. skipRestOfLine  true  
-                                               skipRestOfLine  true ]
+    let skip_tspcs      = skipManySatisfy (isAnyOf [' ';'\t'])
+    let tskipRestOfLine : _ Parser = choice [ skipChar '#' >>. skipRestOfLine true; skipRestOfLine true ]
 
 
     (*|---------------------|*)
@@ -40,8 +37,8 @@ module Parsers =
     let ``]]``  = pstring "]]" .>> skip_tspcs
     let ``"``   = pchar   '"'
     let ``'``   = pchar   '\''
-    let ``"""`` = pstring "\"\"\""
-    let ``'''`` = pstring "\'\'\'"
+    let ``"""`` : _ Parser = pstring "\"\"\""
+    let ``'''`` : _ Parser = pstring "\'\'\'"
     let ``\``   = pchar '\\' 
 
     let inline isEscChar c = c = '\\'  
@@ -60,25 +57,24 @@ module Parsers =
     (*| String Parsers |*)
     (*|----------------|*)
 
-
     // unicode control chars  0x00..0x1f is 0-31
     let isCtrlChar = isAnyOf ([for hex in 0x00..0x1f -> char hex])
 
-    let ctrlChar  : _ Parser = 
+    let ctrlChar  = 
         let ctrlLabel = "Unicode Control Characters [0x00-0x1f] must be preceded by a `\` in basic TOML strings"
         (``\`` >>. satisfyL isCtrlChar ctrlLabel) <??> ctrlLabel
 
     let (|EscChar|_|) ch (twoChar:TwoChars) = if TwoChars('\\',ch) = twoChar then Some EscChar else None
 
-    let ``\b``         : _ Parser = ``\`` >>. pchar 'b'  >>% '\u0008'
-    let ``\t``         : _ Parser = ``\`` >>. pchar 't'  >>% '\u0009'
-    let ``\n``         : _ Parser = ``\`` >>. pchar 'n'  >>% '\u000A'
-    let ``\f``         : _ Parser = ``\`` >>. pchar 'f'  >>% '\u000C'
-    let ``\r``         : _ Parser = ``\`` >>. pchar 'r'  >>% '\u000D'
-    let ``\"``         : _ Parser = ``\`` >>. pchar '"'  >>% '\u0022'
-    let ``\\``         : _ Parser = ``\`` >>. ``\``      >>% '\u005C'
-    let ``\uXXXX``     : _ Parser = ``\`` >>. pchar 'u'  >>. anyString 4 |>> (sprintf "\u%s">> Char.Parse)
-    let ``\UXXXXXXXX`` : _ Parser = ``\`` >>. pchar 'U'  >>. anyString 8 |>> (sprintf "\U%s">> Char.Parse)
+    let ``\b``         = ``\`` >>. pchar 'b'  >>% '\u0008'
+    let ``\t``         = ``\`` >>. pchar 't'  >>% '\u0009'
+    let ``\n``         = ``\`` >>. pchar 'n'  >>% '\u000A'
+    let ``\f``         = ``\`` >>. pchar 'f'  >>% '\u000C'
+    let ``\r``         = ``\`` >>. pchar 'r'  >>% '\u000D'
+    let ``\"``         = ``\`` >>. pchar '"'  >>% '\u0022'
+    let ``\\``         = ``\`` >>. ``\``      >>% '\u005C'
+    let ``\uXXXX``     = ``\`` >>. pchar 'u'  >>. anyString 4 |>> (sprintf "\u%s">> Char.Parse)
+    let ``\UXXXXXXXX`` = ``\`` >>. pchar 'U'  >>. anyString 8 |>> (sprintf "\U%s">> Char.Parse)
 
     let rec string_char flag startIndex (stream: _ CharStream) =
         match stream.Peek () with
@@ -121,33 +117,27 @@ module Parsers =
                             Toml basic strings"|> messageError)
         | _ -> satisfy (isNoneOf['"']) stream
 
-    let basic_string_content: _ Parser = many1Chars (string_char false 0L)
+    let basic_string_content = many1Chars (string_char false 0L)
 
-    let basic_string : _ Parser = 
-        between ``|"|``   ``|"|`` basic_string_content
+    let basic_string = 
+        between ``|"|`` ``|"|`` basic_string_content
 
-    let multi_string_content: _ Parser = 
-        let inline psr (stream:_ CharStream) =
+    let multi_string_content (stream:CharStream<_>) = 
             let multi_string_char = string_char true stream.Index
             (many1CharsTill multi_string_char  (lookAhead ``|"""|``)) stream
-        psr
 
-
-    let multi_string : _ Parser = 
+    let multi_string = 
         between ``|"""|`` ``|"""|`` multi_string_content
 
-
-    let literal_string : _ Parser = 
-        between ``|'|``   ``|'|`` (manySatisfy (isNoneOf['\'';'\n';'\r']))
-
+    let literal_string = 
+        between ``|'|`` ``|'|`` (manySatisfy (isNoneOf ['\'';'\n';'\r']))
 
     let multi_literal_string : _ Parser = 
         let psr = many1CharsTill (satisfy isAnyChar) (lookAhead ``|'''|``)
         let mlit_char = choice[ attempt (unicodeNewline>>.psr); psr ]
         between ``|'''|`` ``|'''|`` mlit_char
     
-
-    let pString_toml : _ Parser =
+    let pString_toml =
         let psr (stream: _ CharStream) =
             match stream.Peek() with
             | '"'   ->  if stream.PeekString 3 = "\"\"\"" 
@@ -167,8 +157,7 @@ module Parsers =
     (*| Simple Value Parsers |*)
     (*|----------------------|*)
 
-
-    let pInt64_toml : _ Parser = 
+    let pInt64_toml = 
         choice [ pstring "0";
             followedByL (satisfy ((<>)'0')) "TOML ints cannot begin with leading 0s"
                 >>. (satisfy (isAnyOf['+';'-']|?|isDigit)) 
@@ -177,10 +166,9 @@ module Parsers =
                     |>> fun (a,b) -> string a + b
         ] |>> int64 
 
-
     let isFloatChar = isDigit|?|isAnyOf['e';'E';'+';'-';'.']
 
-    let pFloat_toml : _ Parser = 
+    let pFloat_toml = 
         let floatChar = satisfy isFloatChar
         let midChars  = many1Chars (skipChar '_' >>. floatChar <|> floatChar)
         let label     = "TOML floats cannot begin with leading 0s unless 0.XXX "  
@@ -196,27 +184,24 @@ module Parsers =
 
     let isDateChar = isDigit|?|isAnyOf['T';':';'.';'-';'Z']
 
-    let pDateTime_toml : _ Parser = manySatisfy isDateChar |>> toDateTime
-    let pBool_toml     : _ Parser = (pstring "false" >>% false) <|> (pstring "true" >>% true)
+    let pDateTime_toml = manySatisfy isDateChar |>> toDateTime
+    let pBool_toml     = (pstring "false" >>% false) <|> (pstring "true" >>% true)
 
-    let toml_int      = pInt64_toml     |>> Value.Int
-    let toml_float    = pFloat_toml     |>> Value.Float
-    let toml_datetime = pDateTime_toml  |>> Value.DateTime
-    let toml_bool     = pBool_toml      |>> Value.Bool
-    let toml_string   = pString_toml    |>> Value.String
-
+    let toml_int      = pInt64_toml    |>> Value.Int
+    let toml_float    = pFloat_toml    |>> Value.Float
+    let toml_datetime = pDateTime_toml |>> Value.DateTime
+    let toml_bool     = pBool_toml     |>> Value.Bool
+    let toml_string   = pString_toml   |>> Value.String
 
     (*|-------------|*)
     (*| Key Parsers |*)
     (*|-------------|*)
-
 
     let isKeyStart = isDigit|?|isLetter|?|isAnyOf['"';'\'']
 
     // key formats
     let pBareKey          : _ Parser = many1Satisfy (isDigit|?|isLetter|?|isAnyOf['_';'-']) 
     let pQuoteKey         : _ Parser = between ``"`` ``"`` (many1Satisfy ((<>)'"'))
-    //let pQuoteKey         : _ Parser = between ``"`` ``"`` (many1CharsTill (noneOf['"']) (lookAhead``"``))
     let pLiteralKey       : _ Parser = between ``'`` ``'`` (many1CharsTill (noneOf['\'']) (lookAhead``'``))
     // key in a collection
     let toml_key          : _ Parser = 
@@ -227,7 +212,6 @@ module Parsers =
     // toplevel keys    
     let pTableKey         : _ Parser = between ``[``   ``]`` (sepBy toml_key ``.``)
     let pArrayOfTablesKey : _ Parser = between ``[[`` ``]]`` (sepBy toml_key ``.``)
-
 
     (*--------------------*)
     (* Collection Parsers *)
@@ -246,11 +230,11 @@ module Parsers =
     let toml_array      , private pArrayImpl  = createParserForwardedToRef ()
     let toml_inlineTable, private pITblImpl   = createParserForwardedToRef ()
 
-    let pKVP : _ Parser  = skip_tspcs >>. toml_key .>>. (skipEqs >>. toml_value)
+    let pKVP = skip_tspcs >>. toml_key .>>. (skipEqs >>. toml_value)
 
-    let pArray_toml : _ Parser = 
-        let ``[``   : _ Parser = (attempt (``[`` .>> unicodeNewline .>> skip_tspcs)) <|> ``[`` 
-        let ``]``   : _ Parser = (attempt (skip_tspcs .>> unicodeNewline .>> skip_tspcs >>. ``]``)) <|> ``]`` 
+    let pArray_toml = 
+        let ``[``   = (attempt (``[`` .>> unicodeNewline .>> skip_tspcs)) <|> ``[`` 
+        let ``]``   = (attempt (skip_tspcs .>> unicodeNewline .>> skip_tspcs >>. ``]``)) <|> ``]`` 
         let rec loop acc (stream:_ CharStream) =
             match stream.Peek() with 
             | ']' -> Reply acc
@@ -259,10 +243,10 @@ module Parsers =
             | '\n'  ->  stream.SkipUnicodeNewline()|> ignore
                         loop acc stream
             | _ -> checkReply  toml_value loop acc stream
-        let psr : _ Parser = loop []
+        let psr = loop []
         between ``[`` ``]`` psr
 
-    let pInlineTable : _ Parser =
+    let pInlineTable =
         between ``{`` ``}`` (sepBy pKVP ``,``) |>> Table
 
     pArrayImpl := pArray_toml  |>> Value.Array       .>> skip_tspcs
@@ -290,11 +274,9 @@ module Parsers =
                         unexpected in a parse for a TOML value" c (int c) stream.Line stream.Column)
     pValueImpl := value_parser .>> skip_tspcs
 
-
     (*|------------------|*)
     (*| Toplevel Parsers |*)
     (*|------------------|*)
-
 
     // Brace matching parsers that store the chars unlike preceding versions
     let ``[+``  = pstring "["  .>> skip_tspcs 
@@ -365,7 +347,6 @@ module Parsers =
 
     pSectionImpl := section_parser .>> skip_tspcs
 
-
     let inline isAoT header = String.bookends "[[" "]]" header
 
     let parse_block (keybracket:string, sectiondata:string) =
@@ -375,8 +356,6 @@ module Parsers =
         | Failure (errorMsg,_,_) -> failwith errorMsg
         | Success (result,_,_)   -> 
             keybracket, result |> List.map (fun (k,v) -> String.concat""[tkey;".";k],v)
-
-
 
     let inline extract (tables:(string*(string*Value)list)[]) =
         if   tables = [||]     then  [||]  , [||] 

@@ -1,6 +1,4 @@
-﻿#r @"../../packages/FParsec/lib/net40-client/FParsecCS.dll"
-#r @"../../packages/FParsec/lib/net40-client/FParsec.dll"
-//#r @"bin/release/toml-fs.dll"
+﻿#load @"..\..\.paket\load\netstandard2.0\FParsec.fsx"
 #load "Prelude.fs"
       "AST.fs"
       "Parsers.fs"

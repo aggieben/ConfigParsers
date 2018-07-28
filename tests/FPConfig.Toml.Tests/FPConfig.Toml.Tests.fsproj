@@ -13,7 +13,7 @@
     <None Include="TestExpr.fsx" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Toml.FSharp\Toml.FSharp.fsproj"/>
+    <ProjectReference Include="..\..\src\FPConfig.Toml\FPConfig.Toml.fsproj"/>
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

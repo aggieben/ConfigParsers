@@ -1,4 +1,4 @@
-namespace Toml
+namespace FPConfig.Toml
 
 open System
 open System.Collections.ObjectModel

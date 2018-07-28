@@ -1,10 +1,10 @@
-﻿module Toml.FSharp.AST
+﻿module FPConfig.Toml.AST
 #nowarn "62"
 
 open System
 open System.Text
 open System.Collections.Generic
-open Toml.FSharp.Prelude
+open FPConfig.Toml.Prelude
 
 type ('key,'value) Dictionary with
     member self.TryAdd (key,value) =
