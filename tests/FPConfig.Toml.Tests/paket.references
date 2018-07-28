@@ -1,6 +1,7 @@
 Microsoft.NET.Test.Sdk
-Nunit
-NUnit3TestAdapter
+xunit
+xunit.runner.visualstudio
+xunit.runner.console
 FParsec
 FsCheck
-
+FsCheck.Xunit

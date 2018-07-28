@@ -6,10 +6,10 @@ framework: >= netstandard2.0
 nuget FSharp.Core
 nuget FParsec
 nuget FsCheck
-
-nuget Nunit
-nuget NUnit.ConsoleRunner
-nuget NUnit3TestAdapter
+nuget FsCheck.Xunit
+nuget xunit
+nuget xunit.runner.visualstudio
+nuget xunit.runner.console
 nuget SourceLink.Fake
 nuget Microsoft.NET.Test.Sdk
 nuget System.Time

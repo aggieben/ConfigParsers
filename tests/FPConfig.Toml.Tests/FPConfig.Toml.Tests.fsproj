@@ -5,12 +5,12 @@
     <IsPackable>false</IsPackable>
   </PropertyGroup>
    <ItemGroup>
-    <None Include="paket.references" />
     <Compile Include="Prelude.fs" />
     <Compile Include="Generators.fs" />
     <Compile Include="ParserTests.fs" />
     <Compile Include="Program.fs" />
     <None Include="TestExpr.fsx" />
+    <None Include="paket.references" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\FPConfig.Toml\FPConfig.Toml.fsproj"/>
