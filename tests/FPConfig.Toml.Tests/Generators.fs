@@ -40,7 +40,7 @@ let gen_scaffold sqs delim =
         let quoted  = Array.concat [delim;flat;uc;delim]
         String quoted) genArr genUnicode 
 
-let basic_set = [32,genCtrlSeq; 7,genEscSeq ;4000,genUnicode] 
+let basic_set = [32,genCtrlSeq; 7,genEscSeq ;4000,genUnicode]
 let multi_set = [100,gen { return [|'\n'|]}]@basic_set
 
 let genBasicString    = gen_scaffold basic_set       [|'\"'|]
@@ -53,10 +53,8 @@ let genLiteralString  =
         let quoted  = Array.concat [[|'\''|];flat;[|'\''|]]
         String quoted) (Gen.frequency lit_set |> Gen.arrayOf)
 
-
 let genTomlString = 
     Gen.oneof [genBasicString; genMultiString; genLiteralString; genMultiLitString]
-
 
 let basic_string_arb     = Arb.fromGen genBasicString 
 let multi_string_arb     = Arb.fromGen genMultiString
@@ -75,10 +73,9 @@ let toml_string_arb      = Arb.fromGen genTomlString
 
 // 64 bit (signed long) range expected (−9,223,372,036,854,775,808 to 9,223,372,036,854,775,807).
 
-let inline lenAbove num = Gen.suchThat (fun a -> (^a:(member Length:int)a) > num)
-let inline lenBelow num = Gen.suchThat (fun a -> (^a:(member Length:int)a) < num)
+let inline lenAbove num = Gen.where (fun a -> (^a:(member Length:int)a) > num)
+let inline lenBelow num = Gen.where (fun a -> (^a:(member Length:int)a) < num)
 
-    
 let gen_digit       = ['0'..'9'] |> Gen.elements 
 let gen_first_digit = ['+';'-']@['1'..'9'] |> Gen.elements 
 
@@ -86,7 +83,6 @@ let gen_mid_digits  =
     let uscore  = (gen_digit, gen_digit) ||> Gen.map2 (fun a b -> [|a;'_';b|])
     Gen.oneof [uscore; genCharr gen_digit  ]
     |> (Gen.listOf >> Gen.map Array.concat) |> lenAbove 1
-
 
 let genTomlInt = 
     Gen.map2  (fun a b -> Array.concat [a;b])
@@ -108,13 +104,13 @@ let randomInsert (num:float) =
 
 
 let genTomlFloat = 
-    Arb.generate<float> |> Gen.suchThat (fun flt -> 
+    Arb.generate<float> |> Gen.where (fun flt -> 
         flt <> Double.NegativeInfinity &&
         flt <> Double.PositiveInfinity &&
         flt <> Double.NaN       && 
         flt <  Double.MaxValue  &&
         flt >  Double.MinValue) 
-        |> Gen.map randomInsert |> Gen.suchThat (fun s -> s.IndexOf '.' <> -1)
+        |> Gen.map randomInsert |> Gen.where (fun s -> s.IndexOf '.' <> -1)
 
 
 let genBool = Arb.generate<bool> |> Gen.map (fun x -> (string x).ToLower())
@@ -153,8 +149,8 @@ let toml_array_arb  = Arb.fromGen genArray
 let genValue = Gen.oneof (genArray::value_set)
 
 let genBareKey = 
-    Gen.elements(['A'..'Z']@['a'..'z']@['0'..'9']@['_'])
-    |> Gen.arrayOf |> lenAbove 3 |> Gen.map String
+    Gen.elements(['A'..'Z']@['a'..'z']@['0'..'9']@['_';'-'])
+    |> Gen.arrayOf |> lenAbove 0 |> Gen.map String
 
 let genBareTableKey =
     genBareKey |> Gen.listOf |> lenAbove 2 |> Gen.map (String.concat ".") 
