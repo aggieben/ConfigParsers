@@ -9,7 +9,7 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPConfig.Toml", "src\FPConf
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{62AE8E68-A90D-4B32-B25F-1883D45A5837}"
 EndProject
-Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPConfig.Toml", "tests\FPConfig.Toml.Tests\FPConfig.Toml.fsproj", "{82CE01A9-FFFF-4796-BB0D-0D420E77716D}"
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FPConfig.Toml.Tests", "tests\FPConfig.Toml.Tests\FPConfig.Toml.Tests.fsproj", "{82CE01A9-FFFF-4796-BB0D-0D420E77716D}"
 EndProject
 Global
 	GlobalSection(SolutionProperties) = preSolution
