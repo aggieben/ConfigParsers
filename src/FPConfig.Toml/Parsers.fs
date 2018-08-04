@@ -4,22 +4,23 @@ namespace FPConfig.Toml
 open System
 open System.Text
 open FParsec
-open AST
 open Prelude
 
+module Helpers =
+    let (<|>) f g = fun x -> f x || g x
+    let (<&>) f g = fun x -> f x && g x
 
 module Parsers =
+    open Helpers
 
-    type UserState = unit
-    type 't Parser = ('t,UserState) Parser 
+    // toml approved whitespace is ' ' or '\t'
+    let tomlSpaces  = regex @"[\t\ ]+"
+    let comment     = skipChar '#' >>. skipRestOfLine true
+    let bareKey = many1Satisfy (isAsciiLetter <|> isAnyOf ['_';'-'])
+    let tomlIdentifier = identifier (IdentifierOptions()) : Parser<string,unit>
+    let equals = pchar '='
 
-    (*|---------------------------------------------|*)
-    (*| Whitespace/Comment/LineEnd AKA Skip Parsers |*)
-    (*|---------------------------------------------|*)
-
-    /// toml approved whitespace is ' ' or '\t'
-    let skip_tspcs      = skipManySatisfy (isAnyOf [' ';'\t'])
-    let tskipRestOfLine : _ Parser = choice [ skipChar '#' >>. skipRestOfLine true; skipRestOfLine true ]
+    //let tskipRestOfLine = choice [ skipChar '#' >>. skipRestOfLine true; skipRestOfLine true ]
 
 
     (*|---------------------|*)
@@ -27,14 +28,14 @@ module Parsers =
     (*|---------------------|*)
 
 
-    let ``.``   = pchar   '.'  .>> skip_tspcs
-    let ``,``   = pchar   ','  .>> skip_tspcs
-    let ``[``   = pchar   '['  .>> skip_tspcs
-    let ``]``   = pchar   ']'  .>> skip_tspcs
-    let ``{``   = pchar   '{'  .>> skip_tspcs
-    let ``}``   = pchar   '}'  .>> skip_tspcs
-    let ``[[``  = pstring "[[" .>> skip_tspcs
-    let ``]]``  = pstring "]]" .>> skip_tspcs
+    let ``.``   = pchar   '.'  .>> tomlSpaces
+    let ``,``   = pchar   ','  .>> tomlSpaces
+    let ``[``   = pchar   '['  .>> tomlSpaces
+    let ``]``   = pchar   ']'  .>> tomlSpaces
+    let ``{``   = pchar   '{'  .>> tomlSpaces
+    let ``}``   = pchar   '}'  .>> tomlSpaces
+    let ``[[``  = pstring "[[" .>> tomlSpaces
+    let ``]]``  = pstring "]]" .>> tomlSpaces
     let ``"``   = pchar   '"'
     let ``'``   = pchar   '\''
     let ``"""`` : _ Parser = pstring "\"\"\""
@@ -368,8 +369,8 @@ module Parsers =
                 fun (x,_)-> isAoT x && getRoot x = root
             else 
                 // only extract groups of tables with the same root to make construction easier
-                fun (x,_)-> not (isAoT x) && getRoot x = root                
-        let took =       
+                fun (x,_)-> not (isAoT x) && getRoot x = root
+        let took =
             match Array.takeWhile filter tables  with 
             | xs when isAoT key -> xs
             | [|_,[]|] -> [||]
