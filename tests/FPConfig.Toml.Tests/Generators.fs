@@ -149,7 +149,7 @@ let toml_array_arb  = Arb.fromGen genArray
 let genValue = Gen.oneof (genArray::value_set)
 
 let genBareKey = 
-    Gen.elements(['A'..'Z']@['a'..'z']@['0'..'9']@['_';'-'])
+    Gen.elements(['A'..'Z']@['a'..'z']@['0'..'9']@['_';'-';'.'])
     |> Gen.arrayOf |> lenAbove 0 |> Gen.map String
 
 let genBareTableKey =
