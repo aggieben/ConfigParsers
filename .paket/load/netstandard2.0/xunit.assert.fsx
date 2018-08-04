@@ -1,0 +1,1 @@
+#r "../../../packages/xunit.assert/lib/netstandard2.0/xunit.assert.dll" 
