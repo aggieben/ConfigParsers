@@ -35,10 +35,11 @@ let basicString           : Parser<string,unit> =
 let literalString         : Parser<string,unit> = 
     manySatisfy (isNoneOf ['\'']) |> between (pchar '\'') (pchar '\'')
 
-let multiLineStringContents : Parser<string,unit> =
-    manySatisfy (isNoneOf nonSpaceCtrlChars)
+let multiLineStringContents : Parser<char,unit> =
+    satisfy (isNoneOf nonSpaceCtrlChars)
 let multiLineString         : Parser<string,unit> =
-    between (pstring "\"\"\"") (pstring "\"\"\"") (skipNewline >>. multiLineStringContents)
+    optional newline >>. manyCharsTill multiLineStringContents (lookAhead (pstring "\"\"\""))
+    |> between (pstring "\"\"\"") (pstring "\"\"\"") 
 
 let quotedKey   : Parser<string,unit> = basicString <|> literalString
 let key         : Parser<string,unit> = bareKey <|> quotedKey
