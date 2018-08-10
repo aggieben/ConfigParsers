@@ -1,4 +1,4 @@
 
-# Toml.FSharp
+# FPConfig.Toml
 
-parse [toml v0.4.0](https://github.com/toml-lang/toml)
+parse [toml](https://github.com/toml-lang/toml); aiming for v0.5 compatibility.
