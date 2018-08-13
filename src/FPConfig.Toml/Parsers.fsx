@@ -5,18 +5,11 @@ open FParsec
 let (<||>) f g = fun x -> f x || g x
 let (<&&>) f g = fun x -> f x && g x
 
-let controlChars = 
-    ['\u0000'; '\u0001'; '\u0002'; '\u0003'; '\u0004'; '\u0005'; '\u0006'; '\u0007';
-     '\u0008'; '\u0009'; '\u000a'; '\u000b'; '\u000c'; '\u000d'; '\u000e'; '\u000f';
-     '\u0010'; '\u0011'; '\u0012'; '\u0013'; '\u0014'; '\u0015'; '\u0016'; '\u0017';
-     '\u0018'; '\u0019'; '\u001a'; '\u001b'; '\u001c'; '\u001d'; '\u001e'; '\u001f';
-     '\u007f']
-
-let nonSpaceCtrlChars =
-    Set.difference (Set.ofList controlChars) (Set.ofList ['\n';'\r';'\t'])
-
 let inline isCtrlChar c = 
-    List.contains c controlChars
+    c <= '\u001f' || c = '\u007f'
+
+let inline isNonSpaceControlChar c =
+    isCtrlChar c && c <> '\n' && c <> '\r' && c <> '\t'
 
 let test parser str =
     match run parser str with
@@ -29,14 +22,14 @@ let bareKey     : Parser<string,unit> = many1Satisfy (isAsciiLetter <||> isDigit
 let equals      : Parser<char,unit>   = pchar '='
 
 let basicStringContents   : Parser<string,unit> = 
-    manySatisfy (isNoneOf (controlChars @ ['\"';'\\']))
+    manySatisfy (isCtrlChar >> not <&&> isNoneOf ['\"'])
 let basicString           : Parser<string,unit> = 
     between (pchar '\"') (pchar '\"') basicStringContents
 let literalString         : Parser<string,unit> = 
     manySatisfy (isNoneOf ['\'']) |> between (pchar '\'') (pchar '\'')
 
 let multiLineStringContents : Parser<char,unit> =
-    satisfy (isNoneOf nonSpaceCtrlChars)
+    satisfy (isNonSpaceControlChar >> not)
 let multiLineString         : Parser<string,unit> =
     optional newline >>. manyCharsTill multiLineStringContents (lookAhead (pstring "\"\"\""))
     |> between (pstring "\"\"\"") (pstring "\"\"\"") 
