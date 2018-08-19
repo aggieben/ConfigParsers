@@ -55,25 +55,38 @@ let applySignToBigint (sign,n) =
 
 let charDigit (c:char) = (int c) - (int '0')
 let foldCharToBigint (radix:bigint) (bi:bigint) (c:char) = bi * radix + bigint (charDigit c)
+let hexStringToBigint (raw:string) = bigint.Parse("0" + raw, Globalization.NumberStyles.HexNumber)
 let octalStringToBigint (raw:string) = seq raw |> Seq.fold (foldCharToBigint 8I) 0I
 let binaryStringToBigint (raw:string) = seq raw |> Seq.fold (foldCharToBigint 2I) 0I
 
+//let fp_ (pChar:Parser<char,unit>) : Parser<char,unit> = pChar >>? pchar '_' .>>? pChar
+let p_ : Parser<char,unit> = pchar '_' .>> (notFollowedBy (pchar '_'))
+
 // Parsers
 let pSign     : Parser<char,unit>   = satisfy (isAnyOf ['-';'+'])
-let p_        : Parser<char,unit>   = pchar '_' .>> (notFollowedBy (pchar '_'))
 
-let pDecimal  : Parser<bigint,unit> = 
-    digit <|> p_ |> many1Chars |>> (stripUnderscore >> bigint.Parse)
+let pNoLeading0 : Parser<unit,unit> = notFollowedByL (pchar '0' .>> lookAhead anyChar) "leading zero not allowed"
+
+let pDecimal  : Parser<bigint,unit> =
+//    let p_ = fp_ digit
+    pNoLeading0 >>. ((digit <|> p_) |> many1Chars)
+    |>> (stripUnderscore >> bigint.Parse)
 
 let pHex      : Parser<bigint,unit> = 
-    pstring "0x" >>. many1Chars hex
-    |>> (fun n -> bigint.Parse("0" + n, Globalization.NumberStyles.HexNumber))
+//    let p_ = fp_ hex
+    pstring "0x" >>. (hex <|> p_ |> many1Chars)
+    |>> (stripUnderscore >> hexStringToBigint)
 
 let pOctal    : Parser<bigint,unit> = 
-    pstring "0o" >>. many1Chars octal |>> octalStringToBigint
+//    let p_ = fp_ octal
+    pstring "0o" >>. (octal <|> p_) |> many1Chars
+    |>> (stripUnderscore >> octalStringToBigint)
 
 let pBinary   : Parser<bigint,unit> = 
-    pstring "0b" >>. many1Chars (anyOf ['0';'1']) |>> binaryStringToBigint
+    let binary = anyOf ['0';'1']
+//    let p_ = fp_ binary
+    pstring "0b" >>. (binary <|> p_ |> many1Chars)
+    |>> (stripUnderscore >> binaryStringToBigint)
 
 let pInteger  : Parser<bigint,unit> = 
     opt pSign .>>. (pHex <|> pOctal <|> pBinary <|> pDecimal)
@@ -82,6 +95,7 @@ let pInteger  : Parser<bigint,unit> =
 (*
     Float Parsers
 *)
+
 
 (*
     Boolean Parsers
