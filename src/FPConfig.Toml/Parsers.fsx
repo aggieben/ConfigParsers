@@ -157,7 +157,7 @@ let pLocalDateTime  : Parser<DateTime, unit> =
     Array Parsers
 *)
 let pArrayOf<'a> (parser:Parser<'a,_>) : Parser<'a list, unit> =
-    pchar '[' >>. (sepBy parser (pchar ',')) .>> pchar ']'
+    pchar '[' >>. (sepBy parser (spaces >>. pchar ',' .>> spaces)) .>> pchar ']'
 let pBasicStringArray = pArrayOf pBasicString
 let pLiteralStringArray = pArrayOf pLiteralString
 let pMultilineLiteralStringArray = pArrayOf pMultilineLiteralString
