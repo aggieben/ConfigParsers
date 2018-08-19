@@ -64,7 +64,6 @@ let p_ : Parser<char,unit> = pchar '_' .>> (notFollowedBy (pchar '_'))
 
 // Parsers
 let pSign     : Parser<char,unit>   = satisfy (isAnyOf ['-';'+'])
-
 let pNoLeading0 : Parser<unit,unit> = notFollowedByL (pchar '0' .>> lookAhead anyChar) "leading zero not allowed"
 
 let pDecimal  : Parser<bigint,unit> =
@@ -95,7 +94,24 @@ let pInteger  : Parser<bigint,unit> =
 (*
     Float Parsers
 *)
+// float utility functions
+let parseTomlFloat = function
+                     | "inf" -> infinity
+                     | "nan" -> nan
+                     | raw -> Convert.ToDouble raw
 
+let applySignToFloat (sign,f) =
+    match sign with
+    | Some '-' -> -1.0 * f
+    | _ -> f
+
+// Parsers
+let pSpecial        : Parser<string,unit> = pstring "inf" <|> pstring "nan"
+let pFloat          : Parser<float,unit> =
+    opt pSign .>>. (pSpecial <|> (many1Chars digit) |>> (stripUnderscore >> parseTomlFloat))
+    |>> applySignToFloat
+
+// NOTE: looks like we can use the build-in FParsec parser `pfloat`
 
 (*
     Boolean Parsers
