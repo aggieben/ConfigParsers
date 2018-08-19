@@ -116,6 +116,7 @@ let pFloat          : Parser<float,unit> =
 (*
     Boolean Parsers
 *)
+let pBool : Parser<bool,unit> = pstring "true" <|> pstring "false" |>> Boolean.Parse
 
 (*
     Offset Date-Time Parsers
