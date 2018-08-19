@@ -2,6 +2,7 @@
 #load @"../../.paket/load/netstandard2.0/System.Time.fsx"
 
 open System
+open System.Text.RegularExpressions
 open FParsec
 
 let (<||>) f g = fun x -> f x || g x
@@ -17,36 +18,38 @@ let test parser str =
 *)
 let pComment     : Parser<unit,unit>   = skipChar '#' >>. skipRestOfLine true
 
-(*
-    String parsers
-*)
+//#region String parsers
 let inline isCtrlChar c = 
     c <= '\u001f' || c = '\u007f'
 
 let inline isNonSpaceControlChar c =
     isCtrlChar c && c <> '\n' && c <> '\r' && c <> '\t'
 
-let tomlSpaces  : Parser<string,unit> = manySatisfy (isAnyOf ['\t';' '])
+let pTomlSpaces             : Parser<string,unit> = manySatisfy (isAnyOf ['\t';' '])
 
-let bareKey     : Parser<string,unit> = many1Satisfy (isAsciiLetter <||> isDigit <||> isAnyOf ['_';'-'])
-let equals      : Parser<char,unit>   = pchar '='
+let pBareKey                : Parser<string,unit> 
+    = many1Satisfy (isAsciiLetter <||> isDigit <||> isAnyOf ['_';'-'])
+let pEquals                 : Parser<char,unit>   = pchar '='
 
-let basicStringContents   : Parser<string,unit> = 
+let pBasicStringContents     : Parser<string,unit> = 
     manySatisfy (isCtrlChar >> not <&&> isNoneOf ['\"'])
-let basicString           : Parser<string,unit> = 
-    between (pchar '\"') (pchar '\"') basicStringContents
-let literalString         : Parser<string,unit> = 
+let pBasicString             : Parser<string,unit> = 
+    between (pchar '\"') (pchar '\"') pBasicStringContents
+let pLiteralString           : Parser<string,unit> = 
     manySatisfy (isNoneOf ['\'']) |> between (pchar '\'') (pchar '\'')
+let pMultilineLiteralString  : Parser<string,unit> =
+    optional newline >>. manyCharsTill anyChar (lookAhead (pstring "'''"))
+    |> between (pstring "'''") (pstring "'''")
 
-let multiLineStringContents : Parser<char,unit> =
+let pMultilineStringContents : Parser<char,unit> =
     satisfy (isNonSpaceControlChar >> not)
-let multiLineString         : Parser<string,unit> =
-    optional newline >>. manyCharsTill multiLineStringContents (lookAhead (pstring "\"\"\""))
+let pMultilineString         : Parser<string,unit> =
+    optional newline >>. manyCharsTill pMultilineStringContents (lookAhead (pstring "\"\"\""))
     |> between (pstring "\"\"\"") (pstring "\"\"\"")
+    |>> (fun s -> Regex.Replace(s, @"\\\s*", ""))
+//#endregion
 
-(*
-    Integer Parsers
-*)
+//#region Integer parsers
 // Integer utility methods
 let stripUnderscore = String.filter (function | '_' -> false | _ -> true)
 
@@ -92,10 +95,10 @@ let pBinary   : Parser<bigint,unit> =
 let pInteger  : Parser<bigint,unit> = 
     opt pSign .>>. (pHex <|> pOctal <|> pBinary <|> pDecimal)
     |>> applySignToBigint
+//#endregion
 
-(*
-    Float Parsers
-*)
+// NOTE: looks like we can use the build-in FParsec parser `pfloat`
+//#region Float parser
 // float utility functions
 let parseTomlFloat = function
                      | "inf" -> infinity
@@ -112,17 +115,14 @@ let pSpecial        : Parser<string,unit> = pstring "inf" <|> pstring "nan"
 let pFloat          : Parser<float,unit> =
     opt pSign .>>. (pSpecial <|> (many1Chars digit) |>> (stripUnderscore >> parseTomlFloat))
     |>> applySignToFloat
-
-// NOTE: looks like we can use the build-in FParsec parser `pfloat`
+//#endregion
 
 (*
     Boolean Parsers
 *)
 let pBool : Parser<bool,unit> = pstring "true" <|> pstring "false" |>> Boolean.Parse
 
-(*
-    Date Parsers
-*)
+//#region Date parsers
 let p4DigitInt : Parser<int,unit> = parray 4 digit |>> (String >> int)
 let p2DigitInt : Parser<int,unit> = parray 2 digit |>> (String >> int)
 let pSeconds   : Parser<(int*int),unit> = p2DigitInt .>>. opt (skipChar '.' >>. manyChars digit)
@@ -151,20 +151,23 @@ let pOffsetDateTime : Parser<DateTimeOffset,unit> =
 let toDateTime (date:Date) _ (time:Time) = DateTime(date.Year, date.Month, date.Day, time.Hour, time.Minute, time.Second, time.Millisecond)
 let pLocalDateTime  : Parser<DateTime, unit> =
     pipe3 pDate (skipAnyOf [' ';'T']) pTime toDateTime
+//#endregion
 
 (*
     Array Parsers
 *)
+let pArrayOf<'a> (parser:Parser<'a,_>) : Parser<'a list, unit> =
+    pchar '[' >>. (sepBy parser (pchar ',')) .>> pchar ']'
+let pBasicStringArray = pArrayOf pBasicString
+let pLiteralStringArray = pArrayOf pLiteralString
+let pMultilineLiteralStringArray = pArrayOf pMultilineLiteralString
+let pMultilineStringArray = pArrayOf pMultilineString
+
+let pIntegerArray = pArrayOf pInteger
+let pFloatArray = pArrayOf pFloat
+let pBoolArray = pArrayOf pBool
 
 (*
     Table Parsers
 *)
-
-let quotedKey   : Parser<string,unit> = basicString <|> literalString
-let key         : Parser<string,unit> = bareKey <|> quotedKey
-let stringValue = basicString <|> literalString
-
-
-let keyValuePair     : Parser<string*string,unit> = 
-    tomlSpaces >>. (key .>> tomlSpaces .>> equals .>> tomlSpaces .>>. stringValue) .>> tomlSpaces
 
