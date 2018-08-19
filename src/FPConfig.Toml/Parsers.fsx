@@ -1,4 +1,6 @@
 #load @"../../.paket/load/netstandard2.0/FParsec.fsx"
+#load @"../../.paket/load/netstandard2.0/System.Time.fsx"
+
 open System
 open FParsec
 
@@ -119,16 +121,36 @@ let pFloat          : Parser<float,unit> =
 let pBool : Parser<bool,unit> = pstring "true" <|> pstring "false" |>> Boolean.Parse
 
 (*
-    Offset Date-Time Parsers
+    Date Parsers
 *)
+let p4DigitInt : Parser<int,unit> = parray 4 digit |>> (String >> int)
+let p2DigitInt : Parser<int,unit> = parray 2 digit |>> (String >> int)
+let pSeconds   : Parser<(int*int),unit> = p2DigitInt .>>. opt (skipChar '.' >>. manyChars digit)
+                                          |>> (fun (sec,frac) -> match frac with
+                                                                 | Some str -> (sec, str.Substring(0, min str.Length 3) |> int)
+                                                                 | _ -> (sec, 0))
 
-(*
-    Local Date-Time Parsers
-*)
+let pSkipDash  : Parser<unit,unit> = skipChar '-'
+let pDate      : Parser<Date,unit> = pipe5 p4DigitInt pSkipDash p2DigitInt pSkipDash p2DigitInt 
+                                      (fun y _ m _ d -> Date(y,m,d))
 
-(*
-    Local Time Parsers
-*)
+let pSkipColon : Parser<unit,unit> = skipChar ':'
+let pTime      : Parser<Time,unit> = pipe5 p2DigitInt pSkipColon p2DigitInt pSkipColon pSeconds
+                                      (fun h _ m _ s -> Time(h,m,fst s, snd s))
+
+let pOffset    : Parser<TimeSpan,unit> = 
+    (pstring "Z" >>% TimeSpan(0,0,0)) <|> (pSign .>>. p2DigitInt .>> pSkipColon .>> pstring "00" 
+                                           |>> (fun (sign,offset) -> match sign with
+                                                                     | '-' -> -1 * offset |> (fun h -> TimeSpan(h,0,0))
+                                                                     | _ -> TimeSpan(offset,0,0)))
+
+let toDateTimeOffset (date:Date) _ (time:Time) offset = DateTimeOffset(date.Year, date.Month, date.Day, time.Hour, time.Minute, time.Second, time.Millisecond, offset)
+let pOffsetDateTime : Parser<DateTimeOffset,unit> =
+    pipe4 pDate (skipAnyOf [' ';'T']) pTime pOffset toDateTimeOffset
+
+let toDateTime (date:Date) _ (time:Time) = DateTime(date.Year, date.Month, date.Day, time.Hour, time.Minute, time.Second, time.Millisecond)
+let pLocalDateTime  : Parser<DateTime, unit> =
+    pipe3 pDate (skipAnyOf [' ';'T']) pTime toDateTime
 
 (*
     Array Parsers
