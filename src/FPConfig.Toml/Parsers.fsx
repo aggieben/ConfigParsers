@@ -162,10 +162,31 @@ let pBasicStringArray = pArrayOf pBasicString
 let pLiteralStringArray = pArrayOf pLiteralString
 let pMultilineLiteralStringArray = pArrayOf pMultilineLiteralString
 let pMultilineStringArray = pArrayOf pMultilineString
-
 let pIntegerArray = pArrayOf pInteger
 let pFloatArray = pArrayOf pFloat
 let pBoolArray = pArrayOf pBool
+let pOffsetDateTimeArray = pArrayOf pOffsetDateTime
+let pLocalDateTimeArray = pArrayOf pLocalDateTime
+let pLocalDateArray = pArrayOf pDate
+let pLocalTimeArray = pArrayOf pTime
+
+let pStringArray = (attempt pBasicStringArray) <|> (attempt pLiteralStringArray) <|> (attempt pMultilineLiteralStringArray) <|> (attempt pMultilineStringArray)
+
+let mapObj (l:'a list) = List.map box l
+let pArray,pArrayRef = createParserForwardedToRef()
+pArrayRef :=
+    choice [
+        attempt pStringArray |>> mapObj;
+        attempt pIntegerArray |>> mapObj;
+        attempt pFloatArray |>> mapObj;
+        attempt pBoolArray |>> mapObj;
+        attempt pOffsetDateTimeArray |>> mapObj;
+        attempt pLocalDateTimeArray |>> mapObj;
+        attempt pLocalDateArray |>> mapObj;
+        attempt pLocalTimeArray |>> mapObj;
+        attempt pArray
+    ]
+
 
 (*
     Table Parsers
