@@ -174,6 +174,7 @@ let pStringArray = (attempt pBasicStringArray) <|> (attempt pLiteralStringArray)
 
 let mapObj (l:'a list) = List.map box l
 let pArray,pArrayRef = createParserForwardedToRef()
+let pNestedArray = pArrayOf pArray
 pArrayRef :=
     choice [
         attempt pStringArray |>> mapObj;
@@ -184,7 +185,7 @@ pArrayRef :=
         attempt pLocalDateTimeArray |>> mapObj;
         attempt pLocalDateArray |>> mapObj;
         attempt pLocalTimeArray |>> mapObj;
-        attempt pArray
+        attempt pNestedArray |>> mapObj
     ]
 
 
