@@ -3,7 +3,7 @@ namespace FPConfig.Toml
 open System
 open System.Collections.ObjectModel
 
-type PrimitiveValue =
+type SimpleValue =
     | String of string
     | Integer of int64
     | Float of float
@@ -13,12 +13,13 @@ type PrimitiveValue =
     | LocalDate of Date
     | LocalTime of Time
 
-type ArrayValue = Array of PrimitiveValue
+type ArrayValue =
+    | Array of SimpleValue list
+    | NestedArray of Array list
 
 type Value =
     | InlineTableValue of ReadOnlyDictionary<string,Value>
-    | PrimitiveValue of PrimitiveValue
-    | ArrayValue of ArrayValue
+    | SimpleValue of SimpleValue
 
 /// This type is intentionally flat, rather than recursive.  While it can be reasonably said that TOML supports
 /// nested tables, it can equally be said that nested tables can be represented in a flat structure with
