@@ -14,4 +14,4 @@ module Parsers =
     open Helpers
 
 // TODO: re-implement parsers from Parsers.fsx here, and use DocumentModel types
-// follow this: https://fsharpforfunandprofit.com/posts/understanding-parser-combinators-4/
+// ref: https://fsharpforfunandprofit.com/posts/understanding-parser-combinators-4/
