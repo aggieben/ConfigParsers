@@ -221,5 +221,5 @@ let pTableName = pchar '[' >>. pKey .>> pchar ']'
 let pTableArrayName = pstring "[[" >>. pKey .>> pstring "]]"
 
 let pTable = 
-    pTableName .>> pTomlSpaces .>> skipNewline .>>.
+    pTomlSpaces >>. pTableName .>> pTomlSpaces .>> skipNewline .>>.
         (manyTill pKeyValuePair (followedBy pTableName <|> eof))
