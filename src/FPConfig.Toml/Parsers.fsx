@@ -37,7 +37,7 @@ module InternalParsers =
         | _ -> n
 
     let charDigit (c:char) = (int c) - (int '0')
-    let foldCharToInteger (radix:int64) (bi:int64) (c:char) = bi * radix + int64 (charDigit c)
+    let foldCharToInteger (radix:int64) (state:int64) (c:char) = state * radix + int64 (charDigit c)
     let hexStringToInteger (raw:string) = Int64.Parse("0" + raw, Globalization.NumberStyles.HexNumber)
     let octalStringToInteger (raw:string) = seq raw |> Seq.fold (foldCharToInteger 8L) 0L
     let binaryStringToInteger (raw:string) = seq raw |> Seq.fold (foldCharToInteger 2L) 0L
