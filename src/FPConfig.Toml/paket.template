@@ -1,23 +1,21 @@
 type project
 owners
-    Jared Hester
+    Benjamin Collins
 authors 
-    Jared Hester
+    Benjamin Collins
 projectUrl
-    http://github.com/cloudRoutine/toml-fs
-iconUrl
-    https://raw.githubusercontent.com/cloudRoutine/toml-fs/master/docs/files/img/logo.png
+    http://github.com/aggieben/FPConfig
 licenseUrl
-    http://github.com/cloudRoutine/toml-fs/blob/master/LICENSE.txt
+    http://github.com/aggieben/FPConfig/blob/master/LICENSE.txt
 requireLicenseAcceptance
     false
 copyright
-    Copyright 2015
+    Copyright 2018
 tags
-    F# TOML parser FParsec FSharp config markup
+    F# TOML YAML JSON5 parser FParsec FSharp config markup
 summary
-    FParsec TOML Parser for F#
+    FParsec-based configuration format parsers for F#
 description
-    FParsec TOML Parser for F#
+    FParsec-based configuration format parsers for F#; including TOML (and then YAML and JSON5)
 
 

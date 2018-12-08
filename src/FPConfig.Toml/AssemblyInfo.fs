@@ -2,7 +2,7 @@
 namespace System
 open System.Reflection
 
-[<assembly: AssemblyTitleAttribute("Toml.FSharp")>]
+[<assembly: AssemblyTitleAttribute("FPConfig.Toml")>]
 [<assembly: AssemblyProductAttribute("Toml.FSharp")>]
 [<assembly: AssemblyDescriptionAttribute("FParsec TOML Parser for F#")>]
 [<assembly: AssemblyVersionAttribute("1.0")>]
@@ -10,7 +10,7 @@ open System.Reflection
 do ()
 
 module internal AssemblyVersionInformation =
-    let [<Literal>] AssemblyTitle = "Toml.FSharp"
+    let [<Literal>] AssemblyTitle = "FPConfig.Toml"
     let [<Literal>] AssemblyProduct = "Toml.FSharp"
     let [<Literal>] AssemblyDescription = "FParsec TOML Parser for F#"
     let [<Literal>] AssemblyVersion = "1.0"

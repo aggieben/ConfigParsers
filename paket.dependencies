@@ -10,14 +10,13 @@ nuget FsCheck.Xunit
 nuget xunit
 nuget xunit.runner.visualstudio
 nuget xunit.runner.console
-nuget SourceLink.Fake
 nuget Microsoft.NET.Test.Sdk
 nuget System.Time
 
-group Build 
+// [ FAKE GROUP ]
+group Build
+    storage none
     source https://api.nuget.org/v3/index.json
-
-    nuget FSharp.Formatting
-    nuget FAKE
-
-    github fsharp/FAKE modules/Octokit/Octokit.fsx
+    nuget Fake.DotNet.Cli
+    nuget Fake.IO.FileSystem
+    nuget Fake.Core.Target
