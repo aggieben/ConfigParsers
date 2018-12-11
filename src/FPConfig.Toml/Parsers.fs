@@ -38,6 +38,12 @@ module internal Helpers =
     /// Parses a binary number in a string to an integer.
     let parseBinary (raw:string) = seq raw |> Seq.fold (foldCharToInteger 2L) 0L
 
+    let toDateTimeOfset (date:Date) _ (time:Time) offset = 
+        DateTimeOffset(date.Year, date.Month, date.Day, time.Hour, time.Minute, time.Second, time.Millisecond, offset)
+    
+    let toDateTime (date:Date) _ (time:Time) = 
+        DateTime(date.Year, date.Month, date.Day, time.Hour, time.Minute, time.Second, time.Millesecond)
+
 module Parsers =
     open Helpers
 
@@ -95,3 +101,41 @@ module Parsers =
             let binary = anyOf ['0';'1']
             pstring "0b" >>. (binary <|> p_ |> many1Chars)
             |>> (stripUnderscore >> parseBinary)
+        
+        /// Parses 4-digit int; intended for use in parsing TOML dates
+        let p4DigitInt : Parser<int,unit> = 
+            parray 4 digit |>> (String >> int)
+
+        /// Parses 2-digit int; intended for use in parsing TOML dates
+        let p2DigitInt : Parser<int,unit> =
+            parray 2 digit |>> (String >> int)
+        
+        /// Parses seconds for TOML date
+        let pSeconds : Parser<(int*int),unit> =
+            p2DigitInt .>>. opt (skipChar '.' >>. manyChars digit)
+            |>> (fun (sec,frac) -> match frac with
+                                   | Some str -> (sec, str.Substring(0, min str.Length 3) |> int)
+                                   | _ -> (sec,0))
+
+        // Parses (and discards) a '-' character; used primarily for parsing dates.
+        let pSkipDash : Parser<unit,unit> =
+            skipChar '-'
+
+        // Parses (and discards) a ':' character; used primarily for parsing dates.
+        let pSkipColon : Parser<unit,unit> =
+            skipChar ':'
+
+        let pOffset : Parser<TimeSpan,unit> =
+            (pstring "Z" >>% TimeSpan(0,0,0)) <|> (pSign .>>. p2DigitInt .>> pSkipColon .>> pstring "00"
+                                                   |>> (fun (sign,offset) -> match sign with
+                                                                             | '-' -> -1 * offset |> (fun h -> TimeSpan(h,0,0))
+                                                                             | _ -> TimeSpan(offst,0,0)))
+
+    let pComment : Parser<unit,unit> =
+        skipChar '#' >>. skipRestOfLine true
+
+    let pTomlSpace : Parser<string,unit> = 
+        manySatisfy (isAnyOf ['\t';' '])
+
+    let pBasicString : Parser<string,unit> = 
+        between (pchar '\"') (pchar '\"') Internal.pBasicStringContents
