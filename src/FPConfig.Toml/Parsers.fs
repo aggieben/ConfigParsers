@@ -4,7 +4,7 @@ namespace FPConfig.Toml
 open System
 open System.Text
 open FParsec
-open Prelude
+open System.Text.RegularExpressions
 
 module internal Helpers =
     /// Composes two predicate functions into a single function using the logical OR operator `||`
@@ -38,11 +38,21 @@ module internal Helpers =
     /// Parses a binary number in a string to an integer.
     let parseBinary (raw:string) = seq raw |> Seq.fold (foldCharToInteger 2L) 0L
 
-    let toDateTimeOfset (date:Date) _ (time:Time) offset = 
+    let toDateTimeOffset (date:Date) (time:Time) offset = 
         DateTimeOffset(date.Year, date.Month, date.Day, time.Hour, time.Minute, time.Second, time.Millisecond, offset)
     
-    let toDateTime (date:Date) _ (time:Time) = 
-        DateTime(date.Year, date.Month, date.Day, time.Hour, time.Minute, time.Second, time.Millesecond)
+    let toDateTime (date:Date) (time:Time) = 
+        DateTime(date.Year, date.Month, date.Day, time.Hour, time.Minute, time.Second, time.Millisecond)
+
+    /// Determines if a character is a control character as defined in the [TOML spec](https://github.com/toml-lang/toml#user-content-string).
+    /// Control characters are thereby defined as [U+0000..U+001F, U+007f].
+    let inline isCtrlChar c = 
+        c <= '\u001f' || c = '\u007f'
+
+    /// Some of the control characters as defined in the [TOML spec](https://github.com/toml-lang/toml#user-content-string)
+    /// are represented as whitespace; this function determines if a character is _not_ a whitespace character.
+    let inline isNonSpaceControlChar c = 
+        isCtrlChar c && c <> '\n' && c <> '\r' && c <> '\t'
 
 module Parsers =
     open Helpers
@@ -50,16 +60,7 @@ module Parsers =
 // TODO: re-implement parsers from Parsers.fsx here, and use DocumentModel types
 // ref: https://fsharpforfunandprofit.com/posts/understanding-parser-combinators-4/
     module Internal =
-        /// Determines if a character is a control character as defined in the [TOML spec](https://github.com/toml-lang/toml#user-content-string).
-        /// Control characters are thereby defined as [U+0000..U+001F, U+007f].
-        let inline isCtrlChar c = 
-            c <= '\u001f' || c = '\u007f'
-        
-        /// Some of the control characters as defined in the [TOML spec](https://github.com/toml-lang/toml#user-content-string)
-        /// are represented as whitespace; this function determines if a character is _not_ a whitespace character.
-        let inline isNonSpaceControlChar c = 
-            isCtrlChar c && c <> '\n' && c <> '\r' && c <> '\t'
-        
+
         /// Determines if a character is '='
         let pEquals : Parser<char,unit> = 
             pchar '='
@@ -68,6 +69,9 @@ module Parsers =
         /// quotes.
         let pBasicStringContents : Parser<string,unit> = 
             manySatisfy (isCtrlChar >> not <&&> isNoneOf ['\"'])
+
+        let pMultilineLiteralStringContents : Parser<char,unit> =
+            satisfy (isNonSpaceControlChar >> not)
 
         /// Parses and ignores single underscore character when followed by anything else.
         let p_ : Parser<char,unit> = 
@@ -129,13 +133,127 @@ module Parsers =
             (pstring "Z" >>% TimeSpan(0,0,0)) <|> (pSign .>>. p2DigitInt .>> pSkipColon .>> pstring "00"
                                                    |>> (fun (sign,offset) -> match sign with
                                                                              | '-' -> -1 * offset |> (fun h -> TimeSpan(h,0,0))
-                                                                             | _ -> TimeSpan(offst,0,0)))
+                                                                             | _ -> TimeSpan(offset,0,0)))
+
+        let pArrayOf<'a> (parser:Parser<'a,_>) : Parser<'a list, unit> =
+            pchar '[' >>. (sepBy parser (spaces >>. pchar ',' .>> spaces)) .>> pchar ']'
 
     let pComment : Parser<unit,unit> =
         skipChar '#' >>. skipRestOfLine true
 
-    let pTomlSpace : Parser<string,unit> = 
+    let pTomlSpaces : Parser<string,unit> = 
         manySatisfy (isAnyOf ['\t';' '])
 
     let pBasicString : Parser<string,unit> = 
         between (pchar '\"') (pchar '\"') Internal.pBasicStringContents
+    
+    let pLiteralString : Parser<string,unit> =
+        manySatisfy (isNoneOf ['\'']) |> between (pchar '\'') (pchar '\'')
+
+    let pMultilineString : Parser<string,unit> =
+        optional newline >>. manyCharsTill Internal.pMultilineLiteralStringContents (lookAhead (pstring "\"\"\""))
+        |> between (pstring "\"\"\"") (pstring "\"\"\"")
+        |>> fun s -> Regex.Replace(s, @"\\\s*", "")
+
+    let pMultilineLiteralString : Parser<string,unit> =
+        optional newline >>. manyCharsTill anyChar (lookAhead (pstring "'''"))
+        |> between (pstring "'''") (pstring "'''")
+
+    let pInteger : Parser<int64,unit> =
+        opt Internal.pSign .>>. (Internal.pHex <|> Internal.pOctal <|> Internal.pBinary <|> Internal.pDecimal)
+        |>> applySignToInt64
+
+    let pBool : Parser<bool,unit> =
+        pstring "true" <|> pstring "false" |>> Boolean.Parse
+
+    let pLocalDate : Parser<Date,unit> =
+        pipe5 Internal.p4DigitInt Internal.pSkipDash Internal.p2DigitInt Internal.pSkipDash Internal.p2DigitInt (fun y _ m _ d -> Date(y,m,d))
+    
+    let pLocalTime : Parser<Time,unit> =
+        pipe5 Internal.p2DigitInt Internal.pSkipColon Internal.p2DigitInt Internal.pSkipColon Internal.pSeconds (fun h _ m _ s -> Time(h,m,fst s, snd s))
+
+    let pOffsetDateTime : Parser<DateTimeOffset,unit> =
+        pipe4 pLocalDate (skipAnyOf [' ';'T']) pLocalTime Internal.pOffset (fun ld _ lt off -> toDateTimeOffset ld lt off)
+
+    let pLocalDateTime : Parser<DateTime,unit> =
+        pipe3 pLocalDate (skipAnyOf [' ';'T']) pLocalTime (fun ld _ lt -> toDateTime ld lt)
+
+    let pBasicStringArray = Internal.pArrayOf pBasicString
+
+    let pLiteralStringArray = Internal.pArrayOf pLiteralString
+
+    let pMultilineLiteralStringArray = Internal.pArrayOf pMultilineLiteralString
+
+    let pMultilineStringArray = Internal.pArrayOf pMultilineString
+
+    let pIntegerArray = Internal.pArrayOf pInteger
+
+    let pFloatArray = Internal.pArrayOf pfloat
+
+    let pBoolArray = Internal.pArrayOf pBool
+
+    let pOffsetDateTimeArray = Internal.pArrayOf pOffsetDateTime
+
+    let pLocalDateTimeArray = Internal.pArrayOf pLocalDateTime
+
+    let pLocalDateArray = Internal.pArrayOf pLocalDate
+
+    let pLocalTimeArray = Internal.pArrayOf pLocalTime
+
+    let pStringArray = 
+        (attempt pBasicStringArray) 
+        <|> (attempt pLiteralStringArray) 
+        <|> (attempt pMultilineLiteralStringArray) 
+        <|> (attempt pMultilineStringArray)
+
+    let pArray,pArrayRef = createParserForwardedToRef()
+    let pNestedArray = Internal.pArrayOf pArray
+    pArrayRef := 
+        choice [
+            attempt pStringArray |>> List.map DocumentModel.mapStringValue
+            attempt pIntegerArray |>> List.map DocumentModel.mapIntegerValue
+            attempt pFloatArray |>> List.map DocumentModel.mapFloatValue
+            attempt pBoolArray |>> List.map DocumentModel.mapBoolValue
+            attempt pOffsetDateTimeArray |>> List.map DocumentModel.mapOffsetDateTimeValue
+            attempt pLocalDateTimeArray |>> List.map DocumentModel.mapLocalDateTimeValue
+            attempt pLocalDateArray |>> List.map DocumentModel.mapLocalDateValue
+            attempt pLocalTimeArray |>> List.map DocumentModel.mapLocalTimeValue
+            attempt pNestedArray |>> List.map DocumentModel.mapArrayValue
+        ]
+
+    let pBareKey : Parser<string,unit> =
+        many1Satisfy (isAsciiLetter <||> isDigit <||> isAnyOf ['_';'-'])
+    
+    let pKeySegment : Parser<string,unit> =
+        pBareKey <|> pBasicString <|> pLiteralString
+
+    let pKey : Parser<string list,unit> =
+        sepBy pKeySegment (pchar '.')
+
+    let pValue = choice [
+        attempt pBasicString |>> DocumentModel.mapStringValue
+        attempt pMultilineString |>> DocumentModel.mapStringValue
+        attempt pLiteralString |>> DocumentModel.mapStringValue
+        attempt pMultilineLiteralString |>> DocumentModel.mapStringValue
+        attempt pInteger |>> DocumentModel.mapIntegerValue
+        attempt pfloat |>> DocumentModel.mapFloatValue
+        attempt pBool |>> DocumentModel.mapBoolValue
+        attempt pOffsetDateTime |>> DocumentModel.mapOffsetDateTimeValue
+        attempt pLocalDateTime |>> DocumentModel.mapLocalDateTimeValue
+        attempt pLocalDate |>> DocumentModel.mapLocalDateValue
+        attempt pLocalTime |>> DocumentModel.mapLocalTimeValue
+        attempt pArray |>> DocumentModel.mapArrayValue
+    ]
+
+    let pKeyValuePair : Parser<(string list * Value), unit> =
+        pTomlSpaces >>. pKey .>> pTomlSpaces .>> skipChar '=' .>> pTomlSpaces .>>. pValue.>> pTomlSpaces
+    
+    let pTableName : Parser<string list,unit> =
+        pchar '[' >>. pKey .>> pchar ']'
+
+    let pTableArrayName : Parser<string list,unit> =
+        pstring "[[" >>. pKey .>> pstring "]]"
+
+    let pTable =
+        pTomlSpaces >>. pTableName .>> pTomlSpaces .>> skipNewline .>>.
+            (manyTill pKeyValuePair (followedBy pTableName <|> eof))

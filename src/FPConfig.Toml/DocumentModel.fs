@@ -20,3 +20,22 @@ type Value =
 type Table =
     | SimpleTable of Map<string,Value>
     | TableArray of Map<string,Value> list
+
+module DocumentModel =
+    let mapStringValue = String >> SimpleValue
+    
+    let mapIntegerValue = Integer >> SimpleValue
+
+    let mapFloatValue = Float >> SimpleValue
+
+    let mapBoolValue =  Boolean >> SimpleValue
+
+    let mapOffsetDateTimeValue = OffsetDateTime >> SimpleValue
+
+    let mapLocalDateTimeValue = LocalDateTime >> SimpleValue
+
+    let mapLocalDateValue = LocalDate >> SimpleValue
+
+    let mapLocalTimeValue = LocalTime >> SimpleValue
+
+    let mapArrayValue = Array

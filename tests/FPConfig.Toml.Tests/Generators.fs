@@ -44,9 +44,9 @@ let basic_set = [32,genCtrlSeq; 7,genEscSeq ;4000,genUnicode]
 let multi_set = [100,gen { return [|'\n'|]}]@basic_set
 
 let genBasicString    = gen_scaffold basic_set       [|'\"'|]
-let genMultiString    = gen_scaffold multi_set       [|'\"';'\"';'\"'|]
+let genMultilineString    = gen_scaffold multi_set       [|'\"';'\"';'\"'|]
 
-let genMultiLitString = gen_scaffold multi_lit_set   [|'\'';'\'';'\''|]
+let genMultilineLiteralString = gen_scaffold multi_lit_set   [|'\'';'\'';'\''|]
 let genLiteralString  =
     Gen.map (fun arr -> 
         let flat    = Array.concat arr
@@ -54,18 +54,17 @@ let genLiteralString  =
         String quoted) (Gen.frequency lit_set |> Gen.arrayOf)
 
 let genTomlString = 
-    Gen.oneof [genBasicString; genMultiString; genLiteralString; genMultiLitString]
+    Gen.oneof [genBasicString; genMultilineString; genLiteralString; genMultilineLiteralString]
 
 let basic_string_arb     = Arb.fromGen genBasicString 
-let multi_string_arb     = Arb.fromGen genMultiString
+let multi_string_arb     = Arb.fromGen genMultilineString
 let literal_string_arb   = Arb.fromGen genLiteralString
-let multi_lit_string_arb = Arb.fromGen genMultiLitString
+let multi_lit_string_arb = Arb.fromGen genMultilineLiteralString
 let toml_string_arb      = Arb.fromGen genTomlString
 
 
 // try generating \uXXXX and \UXXXXXXXX as char arrays and then convert to string
-// make sure they're out of the range of contorl chars
-
+// make sure they're out of the range of control chars
 
 (*|-------------------------|*)
 (*| Simple Value Generators |*)
@@ -76,19 +75,23 @@ let toml_string_arb      = Arb.fromGen genTomlString
 let inline lenAbove num = Gen.where (fun a -> (^a:(member Length:int)a) > num)
 let inline lenBelow num = Gen.where (fun a -> (^a:(member Length:int)a) < num)
 
-let gen_digit       = ['0'..'9'] |> Gen.elements 
-let gen_first_digit = ['+';'-']@['1'..'9'] |> Gen.elements 
+let gen_sign        = [Some '+'; Some '-'; None] |> Gen.elements
+let gen_digit       = ['0'..'9'] |> Gen.elements
+let gen_first_digit = ['1'..'9'] |> Gen.elements 
 
 let gen_mid_digits  = 
     let uscore  = (gen_digit, gen_digit) ||> Gen.map2 (fun a b -> [|a;'_';b|])
-    Gen.oneof [uscore; genCharr gen_digit  ]
-    |> (Gen.listOf >> Gen.map Array.concat) |> lenAbove 1
+    Gen.oneof [uscore; genCharr gen_digit]
+    |> (Gen.listOf >> Gen.map Array.concat) 
+    |> lenAbove 1
+
+let charOptionToString (co:char option) =
+    Option.map string co |> Option.defaultValue ""
 
 let genTomlInt = 
-    Gen.map2  (fun a b -> Array.concat [a;b])
-        (genCharr gen_first_digit) gen_mid_digits
-    |> lenBelow 20 |> Gen.map String
-
+    Gen.map3  (fun sign first (mid:char[]) -> (charOptionToString sign) + (string first) + (String mid))
+              gen_sign gen_first_digit gen_mid_digits
+    |> lenBelow 20
 
 let rng = System.Random ()
 

@@ -11,7 +11,9 @@ nuget xunit
 nuget xunit.runner.visualstudio
 nuget xunit.runner.console
 nuget Microsoft.NET.Test.Sdk
+nuget Microsoft.NETCore.App ~> 2.0.0
 nuget System.Time
+nuget dotnet-xunit
 
 // [ FAKE GROUP ]
 group Build
